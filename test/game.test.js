@@ -1,6 +1,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const { validateSquad, validateLineup, scorePlayer, calculateTeamPoints } = require('../lib/game');
+const { seedData, clubs } = require('../lib/seed');
 
 function p(id,position,price=5,club='A'){return {id:String(id),position,price,club};}
 
@@ -21,4 +22,23 @@ test('oyuncu puanlama mantığı',()=>{
 test('üçlü kaptan çarpanı',()=>{
   const result=calculateTeamPoints({squadEntries:[{playerId:'1',isStarting:true,isCaptain:true}],playersById:{'1':{id:'1',name:'X',position:'FWD',gameweekPoints:5}},activeCard:'tripleCaptain'});
   assert.equal(result.total,15);
+});
+
+test('2026/27 veri paketi 18 kulüp ve 216 gerçek futbolcu içerir',()=>{
+  const data=seedData();
+  assert.equal(data.version,2);
+  assert.equal(clubs.length,18);
+  assert.equal(data.players.length,216);
+  assert.ok(data.players.every(player=>player.realPlayer===true&&player.season==='2026/27'));
+  assert.equal(new Set(data.players.map(player=>player.club)).size,18);
+  assert.equal(data.fixtures.filter(f=>f.week===6).length,9);
+});
+
+test('öne çıkan gerçek futbolcular doğru kulüplerde bulunur',()=>{
+  const players=seedData().players;
+  const clubOf=name=>players.find(player=>player.name===name)?.club;
+  assert.equal(clubOf('Victor Osimhen'),'Galatasaray');
+  assert.equal(clubOf('Ederson'),'Fenerbahçe');
+  assert.equal(clubOf('Orkun Kökçü'),'Beşiktaş');
+  assert.equal(clubOf('Mohamed Salah'),'Trabzonspor');
 });
