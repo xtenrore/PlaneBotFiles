@@ -18,4 +18,14 @@ jobs:
         with:
           node-version: 24
       - run: npm install --ignore-scripts
+      - name: JavaScript syntax checks
+        run: |
+          node --check server.js
+          node --check lib/game.js
+          node --check lib/store.js
+          node --check lib/competitions.js
+          node --check lib/official-roster-patch.js
+          node --check public/app.js
+          node --check public/real-data-patch.js
+          node --check public/feature-patch.js
       - run: npm test
