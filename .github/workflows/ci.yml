@@ -20,6 +20,7 @@ jobs:
       - run: npm install --ignore-scripts
       - name: JavaScript syntax checks
         run: |
+          node --check server-v2.js
           node --check server.js
           node --check lib/game.js
           node --check lib/store.js
@@ -28,4 +29,5 @@ jobs:
           node --check public/app.js
           node --check public/real-data-patch.js
           node --check public/feature-patch.js
+          node --check public/free-platform.js
       - run: npm test
