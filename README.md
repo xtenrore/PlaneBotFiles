@@ -18,6 +18,7 @@ Türkçe, web tabanlı fantezi futbol oyunu. TFF Fantezi Lig gibi modern fantezi
 - İlk açılışta tam ekran deneyimi
 - Railway healthcheck ve kalıcı veri yolu desteği
 - Sunucu tarafı oyun kuralları ve otomatik testler
+- 2026/27 Süper Lig kulüpleri, gerçek futbolcu adları ve güncel hafta fikstürü görünümü
 
 ## Çalıştırma
 
@@ -32,9 +33,9 @@ Uygulama varsayılan olarak `http://localhost:3000` adresinde çalışır.
 
 `DATA_PATH` verilmezse veri `data/db.json` dosyasında saklanır. Railway üzerinde kalıcı volume bağlanıp `DATA_PATH=/data/db.json` ayarlanması önerilir.
 
-## Canlı futbol verisi
+## Futbol verisi
 
-Bu depo, üçüncü taraf ücretli veya kapalı bir TFF veri kaynağını kopyalamaz. Oyuncu/maç veri modeli gerçek veri sağlayıcısına bağlanmaya hazırdır; varsayılan dağıtım güvenli demo veri setiyle gelir. Puan hesaplama motoru sunucu tarafındadır ve maç istatistikleri beslendiğinde gerçek haftalık puan üretmek için genişletilebilir.
+Arayüzde 2026/27 Süper Lig'in güncel kulüp ve gerçek futbolcu adları kullanılır. Fantezi fiyatları, form değerleri ve puanlar SahaNova'nın oyun değerleridir; resmî/ücretli TFF canlı veri akışı gibi gösterilmez. Canlı istatistik sağlayıcısı eklendiğinde puan motoru sunucu tarafında gerçek maç olaylarıyla beslenebilir.
 
 ## Marka notu
 
