@@ -82,7 +82,9 @@
   function replaceText(text) {
     let out = text;
     for (const [from, to] of replacements) {
-      if (out.includes(from)) out = out.split(from).join(to);
+      // Bazı resmî kulüp adları kısa adın kendisini içeriyor (örn. Konyaspor -> Tümosan Konyaspor).
+      // Hedef zaten mevcutsa yeniden dönüştürmeyerek MutationObserver döngüsünü ve çoğalan önekleri önle.
+      if (out.includes(from) && !out.includes(to)) out = out.split(from).join(to);
     }
     const trimmed = out.trim();
     if (exact.has(trimmed)) {
