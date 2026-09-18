@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0b3b2e" />
+  <meta name="description" content="SahaNova Fantezi — Türkçe fantezi futbol oyunu" />
+  <title>SahaNova Fantezi</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <div id="fullscreenGate" class="fullscreen-gate" role="dialog" aria-modal="true" aria-labelledby="gateTitle">
+    <div class="gate-card">
+      <div class="brand-mark large" aria-hidden="true">SN</div>
+      <p class="eyebrow">TÜRKİYE FANTEZİ FUTBOL DENEYİMİ</p>
+      <h1 id="gateTitle">SahaNova Fantezi</h1>
+      <p>Kadronu kur, haftayı yönet, tahminlerini yap ve liglerde yüksel.</p>
+      <button id="enterFullscreen" class="btn btn-primary btn-xl">Tam Ekran Başlat</button>
+      <button id="continueWindowed" class="btn btn-ghost">Pencerede Devam Et</button>
+      <small>İstersen ayarlardan tam ekran modunu tekrar açabilirsin.</small>
+    </div>
+  </div>
+
+  <div class="app-shell">
+    <aside class="sidebar" aria-label="Ana menü">
+      <div class="sidebar-brand">
+        <div class="brand-mark">SN</div>
+        <div><strong>SahaNova</strong><span>Fantezi</span></div>
+      </div>
+      <nav id="mainNav" class="nav-list"></nav>
+      <div class="sidebar-footer">
+        <div class="week-badge"><span>Hafta</span><strong id="sideWeek">4</strong></div>
+        <button id="fullscreenBtn" class="icon-btn" aria-label="Tam ekranı aç">⛶</button>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow" id="pageEyebrow">MAÇ HAFTASI 4</p>
+          <h2 id="pageTitle">Genel Bakış</h2>
+        </div>
+        <div class="top-actions">
+          <button class="points-pill" data-page="rankings" aria-label="Puanlar ve sıralama">
+            <span>Toplam</span><strong id="topPoints">0</strong><em>puan</em>
+          </button>
+          <button id="profileButton" class="avatar-btn" data-page="profile" aria-label="Profil">M</button>
+        </div>
+      </header>
+
+      <section id="content" class="content" tabindex="-1"></section>
+    </main>
+
+    <nav id="mobileNav" class="mobile-nav" aria-label="Mobil ana menü"></nav>
+  </div>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <div id="modalRoot"></div>
+
+  <script src="/app.js" defer></script>
+</body>
+</html>
