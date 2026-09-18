@@ -1,14 +1,14 @@
 {
   "name": "sahanova-fantezi",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "private": true,
   "description": "Turkish-first free fantasy football web game",
-  "main": "server-v2.js",
+  "main": "server-auth.js",
   "scripts": {
-    "start": "node server-v2.js",
-    "dev": "node --watch server-v2.js",
+    "start": "node server-auth.js",
+    "dev": "node --watch server-auth.js",
     "test": "node --test",
-    "check": "node --check server-v2.js && node --check lib/game.js && node --check lib/store.js && node --check lib/competitions.js && node --check lib/official-roster-patch.js && node --check public/app.js && node --check public/real-data-patch.js && node --check public/feature-patch.js && node --check public/free-platform.js"
+    "check": "node --check server-auth.js && node --check server-v2.js && node --check server.js && node --check lib/game.js && node --check lib/store.js && node --check lib/competitions.js && node --check lib/official-roster-patch.js && node --check public/app.js && node --check public/real-data-patch.js && node --check public/feature-patch.js && node --check public/free-platform.js && node --check public/auth-ui.js"
   },
   "engines": { "node": ">=20" }
 }
