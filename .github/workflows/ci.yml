@@ -33,4 +33,5 @@ jobs:
           node --check public/feature-patch.js
           node --check public/free-platform.js
           node --check public/auth-ui.js
+          node --check public/cookie-notice.js
       - run: npm test
