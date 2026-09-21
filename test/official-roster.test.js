@@ -5,14 +5,26 @@ const { applyOfficialRosterPatch } = require('../lib/official-roster-patch');
 
 const canonical = () => applyOfficialRosterPatch(seedData());
 
-test('audited official roster/economy pack is version 4 with 216 real players', () => {
+test('audited official roster/economy/fixture pack is version 5 with 216 real players', () => {
   const data = canonical();
-  assert.equal(data.version, 4);
+  assert.equal(data.version, 5);
   assert.equal(data.players.length, 216);
   assert.ok(data.players.every(p => p.realPlayer === true && p.season === '2026/27'));
   assert.equal(data.footballData.officialRosterAudit, true);
   assert.equal(data.footballData.startingBudgetMillionTL, 100);
   assert.equal(data.footballData.pricingModel, 'fantasy-performance-v1');
+  assert.equal(data.footballData.fixturePolicy, 'verified-provider-only-for-live-and-final-state');
+});
+
+test('scoreless seeded fixtures are never fabricated as live or finished', () => {
+  const data = canonical();
+  const scoreless = data.fixtures.filter(f => f.homeScore == null || f.awayScore == null);
+  assert.ok(scoreless.length > 0);
+  for (const fixture of scoreless) {
+    assert.notEqual(fixture.status, 'BİTTİ', `${fixture.id} must not be marked finished without a verified score`);
+    assert.notEqual(fixture.status, 'CANLI', `${fixture.id} must not be marked live without a verified provider`);
+  }
+  assert.ok(scoreless.some(f => f.status === 'VERİ BEKLENİYOR'));
 });
 
 test('players removed from current TFF A-team lists are absent', () => {

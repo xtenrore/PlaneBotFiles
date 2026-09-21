@@ -11,6 +11,14 @@ const AUTH_PATH = process.env.AUTH_DATA_PATH || path.join(path.dirname(DATA_PATH
 const SESSION_DAYS = 30;
 const loginBuckets = new Map();
 
+const MATCHES_API_URL = String(process.env.MATCHES_API_URL || '').trim();
+const MATCHES_API_HEADER_NAME = String(process.env.MATCHES_API_HEADER_NAME || '').trim();
+const MATCHES_API_HEADER_VALUE = String(process.env.MATCHES_API_HEADER_VALUE || '').trim();
+const MATCHES_API_REFRESH_MS = Math.max(10000, Number(process.env.MATCHES_API_REFRESH_MS || 30000));
+const MATCHES_API_TIMEOUT_MS = Math.max(2000, Number(process.env.MATCHES_API_TIMEOUT_MS || 6000));
+let liveFixtureCache = { fetchedAt:0, fixtures:[], error:null };
+let liveFixtureInflight = null;
+
 function ensureDir(){fs.mkdirSync(path.dirname(AUTH_PATH),{recursive:true});}
 function blank(){return {version:1,accounts:[],sessions:[]};}
 function load(){try{if(!fs.existsSync(AUTH_PATH)){ensureDir();fs.writeFileSync(AUTH_PATH,JSON.stringify(blank(),null,2));return blank();}const x=JSON.parse(fs.readFileSync(AUTH_PATH,'utf8'));return {version:1,accounts:Array.isArray(x.accounts)?x.accounts:[],sessions:Array.isArray(x.sessions)?x.sessions:[]};}catch(e){console.error('Auth verisi okunamadı:',e.message);return blank();}}
@@ -32,6 +40,59 @@ function sessionAccount(req,db){cleanup(db);const token=cookies(req).sn_session;
 function createSession(req,res,db,account){const token=crypto.randomBytes(32).toString('base64url'),now=Date.now();db.sessions=db.sessions.filter(s=>s.userId!==account.id||new Date(s.expiresAt).getTime()>now);db.sessions.push({id:crypto.randomUUID(),userId:account.id,tokenHash:tokenHash(token),createdAt:new Date().toISOString(),expiresAt:new Date(now+SESSION_DAYS*86400000).toISOString(),userAgent:String(req.headers['user-agent']||'').slice(0,240)});save(db);res.setHeader('Set-Cookie',cookieHeader(req,token));}
 function publicAccount(a){return {id:a.id,email:a.email,displayName:a.displayName,emailVerified:Boolean(a.emailVerified),verificationAvailable:false,createdAt:a.createdAt,deletionScheduledAt:a.deletionScheduledAt||null};}
 function rateAllowed(req){const key=String(req.headers['x-forwarded-for']||req.socket?.remoteAddress||'unknown').split(',')[0].trim();const now=Date.now(),row=loginBuckets.get(key)||{start:now,count:0};if(now-row.start>15*60*1000){row.start=now;row.count=0;}row.count++;loginBuckets.set(key,row);return row.count<=20;}
+
+function firstValue(...values){return values.find(v=>v!==undefined&&v!==null&&v!=='');}
+function scoreValue(v){const n=Number(v);return Number.isFinite(n)?n:null;}
+function normalizeMatchStatus(raw){
+  const s=String(raw||'').trim().toUpperCase();
+  if(['FT','AET','PEN','FINISHED','FINAL','BİTTİ'].includes(s))return 'BİTTİ';
+  if(['1H','2H','HT','ET','P','BT','LIVE','IN_PLAY','PAUSED','CANLI'].includes(s))return 'CANLI';
+  if(['PST','POSTPONED','ERTELENDİ'].includes(s))return 'ERTELENDİ';
+  if(['CANC','CANCELLED','CANCELED','İPTAL'].includes(s))return 'İPTAL';
+  if(['SUSP','SUSPENDED','INT','INTERRUPTED'].includes(s))return 'DURDURULDU';
+  return 'PROGRAM';
+}
+function normalizeLiveFixture(item,index){
+  const fixture=item?.fixture||item||{};
+  const home=firstValue(item?.teams?.home?.name,item?.homeTeam?.name,item?.home?.name,item?.strHomeTeam,item?.home_name,item?.homeTeam);
+  const away=firstValue(item?.teams?.away?.name,item?.awayTeam?.name,item?.away?.name,item?.strAwayTeam,item?.away_name,item?.awayTeam);
+  if(typeof home!=='string'||typeof away!=='string'||!home.trim()||!away.trim())return null;
+  const rawStatus=firstValue(fixture?.status?.short,fixture?.status?.long,item?.status?.short,item?.status,item?.strStatus,item?.match_status);
+  const homeScore=scoreValue(firstValue(item?.goals?.home,item?.score?.fullTime?.home,item?.score?.fulltime?.home,item?.homeScore,item?.intHomeScore,item?.score_home));
+  const awayScore=scoreValue(firstValue(item?.goals?.away,item?.score?.fullTime?.away,item?.score?.fulltime?.away,item?.awayScore,item?.intAwayScore,item?.score_away));
+  const kickoff=firstValue(fixture?.date,item?.utcDate,item?.date,item?.strTimestamp,item?.kickoff,item?.match_date);
+  const minute=scoreValue(firstValue(fixture?.status?.elapsed,item?.status?.elapsed,item?.minute,item?.time?.elapsed));
+  const id=String(firstValue(fixture?.id,item?.id,item?.eventId,item?.idEvent,`${home}-${away}-${kickoff||index}`));
+  return {id,home:home.trim(),away:away.trim(),kickoff:kickoff||null,status:normalizeMatchStatus(rawStatus),homeScore,awayScore,minute,dataSource:'live-api',verifiedResult:true};
+}
+function extractLiveFixtures(payload){
+  const list=Array.isArray(payload)?payload:Array.isArray(payload?.response)?payload.response:Array.isArray(payload?.fixtures)?payload.fixtures:Array.isArray(payload?.matches)?payload.matches:Array.isArray(payload?.events)?payload.events:[];
+  return list.map(normalizeLiveFixture).filter(Boolean);
+}
+async function fetchLiveFixtures(){
+  if(!MATCHES_API_URL)return {configured:false,fixtures:[],fetchedAt:null,stale:false};
+  const now=Date.now();
+  if(liveFixtureCache.fixtures.length&&now-liveFixtureCache.fetchedAt<MATCHES_API_REFRESH_MS)return {configured:true,fixtures:liveFixtureCache.fixtures,fetchedAt:new Date(liveFixtureCache.fetchedAt).toISOString(),stale:false};
+  if(liveFixtureInflight)return liveFixtureInflight;
+  liveFixtureInflight=(async()=>{
+    const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),MATCHES_API_TIMEOUT_MS);
+    try{
+      const headers={'Accept':'application/json'};
+      if(MATCHES_API_HEADER_NAME&&MATCHES_API_HEADER_VALUE)headers[MATCHES_API_HEADER_NAME]=MATCHES_API_HEADER_VALUE;
+      const response=await fetch(MATCHES_API_URL,{headers,signal:controller.signal,cache:'no-store'});
+      if(!response.ok)throw new Error(`Maç API HTTP ${response.status}`);
+      const payload=await response.json();
+      const fixtures=extractLiveFixtures(payload);
+      if(!fixtures.length)throw new Error('Maç API geçerli fikstür döndürmedi.');
+      liveFixtureCache={fetchedAt:Date.now(),fixtures,error:null};
+      return {configured:true,fixtures,fetchedAt:new Date(liveFixtureCache.fetchedAt).toISOString(),stale:false};
+    }catch(err){
+      liveFixtureCache.error=String(err?.message||err);
+      return {configured:true,fixtures:liveFixtureCache.fixtures,fetchedAt:liveFixtureCache.fetchedAt?new Date(liveFixtureCache.fetchedAt).toISOString():null,stale:true,error:liveFixtureCache.error};
+    }finally{clearTimeout(timer);liveFixtureInflight=null;}
+  })();
+  return liveFixtureInflight;
+}
 
 async function authHandler(req,res,url,db){
   if(req.method==='GET'&&url.pathname==='/api/auth/me'){
@@ -63,6 +124,9 @@ http.createServer = function patchedCreateServer(appHandler){
   return realCreateServer(async(req,res)=>{
     try{
       const url=new URL(req.url,`http://${req.headers.host||'localhost'}`),db=load();cleanup(db);
+      if(req.method==='GET'&&url.pathname==='/api/live-fixtures'){
+        const live=await fetchLiveFixtures();return json(res,200,{ok:true,...live});
+      }
       if(url.pathname.startsWith('/api/auth/')){const handled=await authHandler(req,res,url,db);if(handled!==false)return;}
       const a=sessionAccount(req,db);
       if(a)req.headers['x-user-id']=a.id;else if(!req.headers['x-admin-key'])delete req.headers['x-user-id'];
