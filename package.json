@@ -3,12 +3,12 @@
   "version": "2.1.0",
   "private": true,
   "description": "Turkish-first free fantasy football web game",
-  "main": "server-auth.js",
+  "main": "server-live.js",
   "scripts": {
-    "start": "node server-auth.js",
-    "dev": "node --watch server-auth.js",
+    "start": "node server-live.js",
+    "dev": "node --watch server-live.js",
     "test": "node --test",
-    "check": "node --check server-auth.js && node --check server-v2.js && node --check server.js && node --check lib/game.js && node --check lib/store.js && node --check lib/competitions.js && node --check lib/official-roster-patch.js && node --check public/app.js && node --check public/real-data-patch.js && node --check public/feature-patch.js && node --check public/free-platform.js && node --check public/economy-patch.js && node --check public/auth-ui.js"
+    "check": "node --check server-live.js && node --check server-auth.js && node --check server-v2.js && node --check server.js && node --check lib/game.js && node --check lib/store.js && node --check lib/competitions.js && node --check lib/official-roster-patch.js && node --check lib/sofascore-provider.js && node --check public/app.js && node --check public/real-data-patch.js && node --check public/feature-patch.js && node --check public/free-platform.js && node --check public/economy-patch.js && node --check public/auth-ui.js"
   },
   "engines": { "node": ">=20" }
 }

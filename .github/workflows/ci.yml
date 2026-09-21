@@ -21,6 +21,7 @@ jobs:
       - run: npm ci --ignore-scripts
       - name: JavaScript syntax checks
         run: |
+          node --check server-live.js
           node --check server-auth.js
           node --check server-v2.js
           node --check server.js
@@ -28,6 +29,7 @@ jobs:
           node --check lib/store.js
           node --check lib/competitions.js
           node --check lib/official-roster-patch.js
+          node --check lib/sofascore-provider.js
           node --check public/app.js
           node --check public/real-data-patch.js
           node --check public/feature-patch.js
