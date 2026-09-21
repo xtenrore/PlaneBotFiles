@@ -112,8 +112,22 @@ Aynı maç haftasında yalnız bir kart etkinleştirilebilir. Her kart bir devre
 - Seçilmiş oyuncular 16 Eylül 2026 tarihli TFF resmî A takım listelerine karşı denetlenmiştir
 - Güncel maç haftası fikstür görünümü
 - Gerçek oyuncu adları ve kulüpleri
+- Skoru olmayan fallback maçlar hiçbir zaman sahte biçimde `CANLI` veya `BİTTİ` işaretlenmez
+- Canlı fikstür görünümü yalnızca doğrulanmış haricî maç sağlayıcısından gelen veriyle güncellenir
 
 Fantezi fiyatı, sahiplik, form ve oyun içi puanlar SahaNova'nın oyun değerleridir. Proje kapalı veya ücretli bir TFF canlı veri akışını taklit etmez. Sunucu, gerçek maç olaylarını sağlayan lisanslı/izinli bir veri kaynağı bağlandığında dakika, gol, asist, kart, kurtarış ve diğer istatistikleri alıp puanları yeniden hesaplayabilecek şekilde hazırlanmıştır.
+
+### Canlı maç API bağlantısı
+
+Canlı fikstür adaptörü sunucu tarafındadır; API anahtarı tarayıcıya gönderilmez. Sağlayıcı bağlamak için Railway/service ortam değişkenleri:
+
+- `MATCHES_API_URL` — fikstür/canlı maç JSON endpoint'i
+- `MATCHES_API_HEADER_NAME` — gerekiyorsa API anahtarı header adı
+- `MATCHES_API_HEADER_VALUE` — gizli API anahtarı/header değeri
+- `MATCHES_API_REFRESH_MS` — cache yenileme aralığı; varsayılan 30000 ms, minimum 10000 ms
+- `MATCHES_API_TIMEOUT_MS` — sağlayıcı timeout'u; varsayılan 6000 ms
+
+Adaptör doğrudan dizi cevaplarını ve yaygın `response`, `fixtures`, `matches` veya `events` dizilerini okuyabilir. API-Football benzeri `fixture + teams + goals` cevapları dahil yaygın skor/durum biçimleri normalize edilir. Sağlayıcı henüz yapılandırılmamışsa uygulama hard-coded skor üretmez; backend fallback fikstürünü değiştirmeden gösterir.
 
 ## Henüz haricî servis gerektiren parçalar
 
