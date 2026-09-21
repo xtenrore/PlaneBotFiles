@@ -5,12 +5,14 @@ const { applyOfficialRosterPatch } = require('../lib/official-roster-patch');
 
 const canonical = () => applyOfficialRosterPatch(seedData());
 
-test('audited official roster pack is version 3 with 216 real players', () => {
+test('audited official roster/economy pack is version 4 with 216 real players', () => {
   const data = canonical();
-  assert.equal(data.version, 3);
+  assert.equal(data.version, 4);
   assert.equal(data.players.length, 216);
   assert.ok(data.players.every(p => p.realPlayer === true && p.season === '2026/27'));
   assert.equal(data.footballData.officialRosterAudit, true);
+  assert.equal(data.footballData.startingBudgetMillionTL, 100);
+  assert.equal(data.footballData.pricingModel, 'fantasy-performance-v1');
 });
 
 test('players removed from current TFF A-team lists are absent', () => {
