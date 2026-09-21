@@ -19,7 +19,7 @@ async function waitFor(url, child) {
   throw last || new Error('Sunucu başlatılamadı.');
 }
 
-test('kayıt, güvenli oturum, profil izolasyonu ve çıkış akışı', { timeout: 20000 }, async () => {
+test('kayıt, güvenli oturum, profil izolasyonu, canlı fikstür fallback ve çıkış akışı', { timeout: 20000 }, async () => {
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'sahanova-auth-'));
   const port = 32000 + (process.pid % 20000);
   const base = `http://127.0.0.1:${port}`;
@@ -30,7 +30,8 @@ test('kayıt, güvenli oturum, profil izolasyonu ve çıkış akışı', { timeo
       PORT: String(port),
       DATA_PATH: path.join(tmp, 'db.json'),
       AUTH_DATA_PATH: path.join(tmp, 'auth.json'),
-      NODE_ENV: 'test'
+      NODE_ENV: 'test',
+      MATCHES_API_URL: ''
     },
     stdio: ['ignore', 'pipe', 'pipe']
   });
@@ -39,6 +40,13 @@ test('kayıt, güvenli oturum, profil izolasyonu ve çıkış akışı', { timeo
 
   try {
     await waitFor(`${base}/api/health`, child);
+
+    const live = await fetch(`${base}/api/live-fixtures`);
+    assert.equal(live.status, 200);
+    const liveBody = await live.json();
+    assert.equal(liveBody.ok, true);
+    assert.equal(liveBody.configured, false);
+    assert.deepEqual(liveBody.fixtures, []);
 
     const registration = await fetch(`${base}/api/auth/register`, {
       method: 'POST',
@@ -77,6 +85,10 @@ test('kayıt, güvenli oturum, profil izolasyonu ve çıkış akışı', { timeo
     assert.equal(stateBody.user.favoriteClub, 'Galatasaray');
     assert.ok(stateBody.leagues.some(l => l.type === 'country'));
     assert.ok(stateBody.leagues.some(l => l.type === 'favoriteClub'));
+    for (const fixture of stateBody.fixtures.filter(f => f.homeScore == null || f.awayScore == null)) {
+      assert.notEqual(fixture.status, 'BİTTİ');
+      assert.notEqual(fixture.status, 'CANLI');
+    }
 
     const logout = await fetch(`${base}/api/auth/logout`, {
       method: 'POST',
